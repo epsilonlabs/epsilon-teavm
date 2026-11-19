@@ -12,8 +12,17 @@
     <maven.compiler.release>11</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <teavm.version>0.16.0</teavm.version>
-    <epsilon.version>2.9.0</epsilon.version>
+    <epsilon.version>2.10.0-SNAPSHOT</epsilon.version>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>central-snapshots</id>
+      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+      <releases><enabled>false</enabled></releases>
+      <snapshots><enabled>true</enabled></snapshots>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
@@ -45,32 +54,80 @@
       <artifactId>org.eclipse.epsilon.eol.engine</artifactId>
       <version>${epsilon.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.erl.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.evl.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.etl.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.egl.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.ecl.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.eml.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.epl.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.ewl.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.flock.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.pinset.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.emg.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.eunit.engine</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.emc.json</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.epsilon</groupId>
+      <artifactId>org.eclipse.epsilon.emc.csv</artifactId>
+      <version>${epsilon.version}</version>
+    </dependency>
   </dependencies>
 
   <build>
     <plugins>
-      <!-- Unpack Epsilon and its runtime deps into target/classes, skipping the classes we patch in src/main/java -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.8.1</version>
-        <executions>
-          <execution>
-            <id>unpack-epsilon</id>
-            <phase>process-classes</phase>
-            <goals><goal>unpack-dependencies</goal></goals>
-            <configuration>
-              <includeScope>compile</includeScope>
-              <excludeGroupIds>org.teavm</excludeGroupIds>
-              <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-              <excludes>META-INF/**,**/module-info.class,**/ConcurrencyUtils*.class,**/DynamicOperation*.class,**/EolNativeType*.class,**/EolClasspathNativeTypeDelegate*.class,**/SortByOperation*.class,**/ParallelMapByOperation*.class,**/IterableOperationContributor*.class</excludes>
-              <overWriteReleases>false</overWriteReleases>
-              <overWriteSnapshots>false</overWriteSnapshots>
-              <overWriteIfNewer>false</overWriteIfNewer>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
@@ -100,8 +157,6 @@
               <targetDirectory>${project.build.directory}/webapp/teavm</targetDirectory>
               <mainClass>demo.Main</mainClass>
               <targetType>JAVASCRIPT</targetType>
-              <!-- Only the TeaVM libs (provided) come from jars; Epsilon comes from target/classes -->
-              <compileScopes><scope>provided</scope></compileScopes>
               <minifying>true</minifying>
               <optimizationLevel>ADVANCED</optimizationLevel>
               <debugInformationGenerated>false</debugInformationGenerated>

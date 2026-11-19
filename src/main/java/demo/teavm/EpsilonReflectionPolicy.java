@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.teavm.extension.introspect.IntrospectClass;
 import org.teavm.extension.introspect.IntrospectField;
@@ -15,9 +14,13 @@ import org.teavm.extension.spi.reflection.ReflectionPolicy;
 
 /**
  * Compile-time policy telling TeaVM which classes need runtime reflection metadata.
- * EOL resolves operation calls (e.g. "abc".toUpperCase(), x.println()) by looking up
- * public Java methods reflectively, both on the target objects and on Epsilon's
- * operation contributors. The parser's entry rule is also invoked reflectively.
+ * Epsilon programs can call any public Java method on the objects they handle
+ * (e.g. "abc".toUpperCase(), x.println()), which EOL resolves reflectively, both on the
+ * target objects and on Epsilon's operation contributors. The parser's entry rule is
+ * also invoked reflectively.
+ *
+ * <p>Everything made reflectable is compiled. Members that need APIs a browser cannot
+ * provide are stubbed by {@link BrowserCompatPlugin}.
  */
 public class EpsilonReflectionPolicy implements ReflectionPolicy {
 
@@ -29,7 +32,13 @@ public class EpsilonReflectionPolicy implements ReflectionPolicy {
         List<IntrospectMember> members = new ArrayList<>();
         boolean epsilon = cls.name().startsWith("org.eclipse.epsilon.");
         for (IntrospectMethod m : cls.declaredMethods()) {
-            if (Modifier.isPublic(m.modifiers()) && !Modifier.isNative(m.modifiers()) && !(epsilon && EXCLUDED_EPSILON_METHODS.contains(m.name()))) {
+            // Native methods are TeaVM intrinsics without a callable implementation.
+            // Constructors are only needed for JDK types (new Native("java.util.ArrayList")); exposing
+            // Epsilon's would make TeaVM assume that any Epsilon class can be instantiated.
+            // Stubbed methods can mention types that are no longer compiled.
+            if (Modifier.isPublic(m.modifiers()) && !Modifier.isNative(m.modifiers())
+                    && !(epsilon && m.isConstructor())
+                    && !BrowserCompatPlugin.isStubbed(cls.name(), m.name())) {
                 members.add(m);
             }
         }
@@ -46,16 +55,8 @@ public class EpsilonReflectionPolicy implements ReflectionPolicy {
         return false;
     }
 
-    /**
-     * Epsilon operations whose implementations need JDK APIs that don't exist in the
-     * browser (XML parsers, parallel streams). Keeping them out of reflection metadata
-     * keeps TeaVM from trying to compile them.
-     */
-    private static final Set<String> EXCLUDED_EPSILON_METHODS = Set.of("escapeXml", "parallelStream");
-
     private static boolean isReflectable(String name) {
-        // eol.tools contains System/native-process helpers that cannot work in a browser
-        return (name.startsWith("org.eclipse.epsilon.") && !name.startsWith("org.eclipse.epsilon.eol.tools."))
+        return name.startsWith("org.eclipse.epsilon.")
                 || inPackage(name, "java.lang")
                 || inPackage(name, "java.util")
                 || inPackage(name, "java.math");

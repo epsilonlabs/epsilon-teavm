@@ -20,6 +20,21 @@ public class Main {
     }
 
     /**
+     * Runs a program in any Epsilon language. See {@link EpsilonRunner#run(String)}.
+     *
+     * @param requestJson {"language": "evl", "program": "...", "models": [{"name", "kind", "content", "output"}], "comparison": "ECL program for EML"}
+     * @return [stdout, stderr, returned value, JSON object of output files]
+     */
+    @JSExport
+    public static String[] runEpsilon(String requestJson) {
+        try {
+            return EpsilonRunner.run(requestJson);
+        } catch (Throwable t) {
+            return new String[] {"", "Internal error: " + t + "\n", "", "{}"};
+        }
+    }
+
+    /**
      * Parses and executes an EOL program.
      *
      * @return a 3-element array: [stdout, stderr, string value of the program's return statement or ""]

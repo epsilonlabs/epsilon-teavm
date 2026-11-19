@@ -1,344 +1,74 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Epsilon Browser Playground</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EOL in the Browser</title>
 <style>
-/* Layout: slim header; left column = program over its inputs, right column = console over output files; stacks on phones */
-:root {
-  --bg: #f5f6f8;
-  --surface: #ffffff;
-  --fg: #1d2330;
-  --muted: #5d6677;
-  --line: #d9dde5;
-  --accent: #3f4fb3;
-  --accent-fg: #ffffff;
-  --accent-soft: #e8eaf8;
-  --ok: #217a4b;
-  --warn: #8a5a00;
-  --err: #b42335;
-  --code-bg: #fbfbfd;
-  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-code: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #14171f; --surface: #1b1f29; --fg: #e3e6ee; --muted: #9aa3b5; --line: #2d3342;
-    --accent: #8f9cf0; --accent-fg: #121521; --accent-soft: #262b45; --ok: #5cc98d; --warn: #e2b04a; --err: #f08391; --code-bg: #171b24;
-    color-scheme: dark;
+  :root { color-scheme: light dark; --bg: #fff; --fg: #1f2328; --muted: #656d76; --border: #d0d7de; --panel: #f6f8fa; --err: #cf222e; --accent: #0969da; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0d1117; --fg: #e6edf3; --muted: #8d96a0; --border: #30363d; --panel: #161b22; --err: #ff7b72; --accent: #4493f8; }
   }
-}
-:root[data-theme="dark"] {
-  --bg: #14171f; --surface: #1b1f29; --fg: #e3e6ee; --muted: #9aa3b5; --line: #2d3342;
-  --accent: #8f9cf0; --accent-fg: #121521; --accent-soft: #262b45; --ok: #5cc98d; --warn: #e2b04a; --err: #f08391; --code-bg: #171b24;
-  color-scheme: dark;
-}
-
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font: 15px/1.5 var(--font-ui);
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 20px;
-}
-.wrap { max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; min-height: 100%; }
-
-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
-h1 { font-size: 1.35rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
-.sub { margin: 2px 0 0; color: var(--muted); font-size: 0.9rem; max-width: 76ch; }
-.engine { font-family: var(--font-code); font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
-.engine b { color: var(--fg); font-weight: 500; }
-
-.bench { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; flex: 1; }
-.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-@media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); } }
-
-.pane { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
-.pane.tall { flex: 3; min-height: 340px; }
-.pane.short { flex: 2; min-height: 240px; }
-.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
-.label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.spacer { margin-right: auto; }
-.lang { font-family: var(--font-code); font-size: 0.75rem; font-weight: 500; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 1px 6px; }
-.desc { padding: 7px 12px; font-size: 0.84rem; color: var(--muted); border-bottom: 1px solid var(--line); }
-
-select, button { font: inherit; font-size: 0.86rem; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
-select { max-width: 100%; min-width: 0; }
-button { cursor: pointer; }
-button.run { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; padding: 5px 14px; }
-button:disabled { opacity: 0.55; cursor: progress; }
-:is(select, button, textarea):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-kbd { font-family: var(--font-code); font-size: 0.72rem; opacity: 0.85; }
-
-.tabs { display: flex; gap: 2px; overflow-x: auto; padding: 0 6px; border-bottom: 1px solid var(--line); }
-.tab { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 7px 10px; font-family: var(--font-code); font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
-.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
-.tab .kind { font-family: var(--font-ui); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; margin-left: 6px; opacity: 0.75; }
-
-textarea.code {
-  flex: 1; width: 100%; resize: none; border: 0; margin: 0;
-  padding: 12px 14px; background: var(--code-bg); color: var(--fg);
-  font: 13.5px/1.6 var(--font-code); tab-size: 2; white-space: pre; overflow: auto;
-}
-textarea.code:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
-.empty { flex: 1; padding: 14px; color: var(--muted); font-size: 0.86rem; background: var(--code-bg); }
-
-pre.out { flex: 1; margin: 0; padding: 12px 14px; overflow: auto; background: var(--code-bg); font: 13px/1.6 var(--font-code); white-space: pre-wrap; word-break: break-word; }
-#console .err { color: var(--err); }
-#console .ret { color: var(--accent); }
-#console .note { color: var(--muted); font-style: italic; }
-#console .warning { color: var(--warn); }
-#console .error { color: var(--err); }
-#console .success { color: var(--ok); }
-#console .failure { color: var(--err); }
-
-.status { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
-.status.ok .dot { background: var(--ok); }
-.status.fail .dot { background: var(--err); }
-
-footer { color: var(--muted); font-size: 0.8rem; max-width: 100ch; }
-footer code { font-family: var(--font-code); font-size: 0.78rem; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 900px; margin: 0 auto; display: grid; gap: 12px; }
+  h1 { font-size: 1.3rem; margin: 0; }
+  p { margin: 0; color: var(--muted); }
+  textarea, pre { box-sizing: border-box; width: 100%; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 6px;
+                  background: var(--panel); color: var(--fg); font: 14px/1.45 ui-monospace, Menlo, Consolas, monospace; tab-size: 2; }
+  textarea { height: 360px; resize: vertical; }
+  pre { min-height: 120px; white-space: pre-wrap; }
+  .err { color: var(--err); }
+  .result { color: var(--accent); }
+  button { justify-self: start; padding: 6px 16px; font: inherit; border-radius: 6px; border: 1px solid var(--border); background: var(--accent); color: #fff; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <h1>Epsilon Browser Playground</h1>
-      <p class="sub">Programs in Eclipse Epsilon's languages run here in your browser, against JSON and CSV models. The Epsilon engines are Java compiled to JavaScript with TeaVM, so no server or JVM is involved.</p>
-    </div>
-    <div class="engine">Epsilon <b>2.9.0</b> · TeaVM <b>0.16.0</b></div>
-  </header>
+<main>
+  <h1>EOL in the browser</h1>
+  <p>Eclipse Epsilon's EOL engine, compiled to JavaScript with TeaVM. Press Run or Ctrl/Cmd+Enter.</p>
+  <textarea id="program" spellcheck="false">15.fibonacci().println();
 
-  <main class="bench">
-    <div class="col">
-      <section class="pane tall" aria-label="Program">
-        <div class="bar">
-          <span class="label">Program</span>
-          <span id="lang" class="lang"></span>
-          <span class="spacer"></span>
-          <select id="example" aria-label="Load an example"></select>
-          <button id="run" class="run" type="button" disabled>Run <kbd>⌘↵</kbd></button>
-        </div>
-        <div id="desc" class="desc"></div>
-        <textarea id="source" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Program source"></textarea>
-      </section>
-
-      <section class="pane short" aria-label="Inputs">
-        <div class="bar"><span class="label">Inputs</span></div>
-        <div id="input-tabs" class="tabs" role="tablist" aria-label="Models and files"></div>
-        <textarea id="input" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Selected input"></textarea>
-        <div id="input-empty" class="empty" hidden>This example has no models. Pick one of the other languages to see JSON and CSV models here.</div>
-      </section>
-    </div>
-
-    <div class="col">
-      <section class="pane tall" aria-label="Console">
-        <div class="bar">
-          <span class="label spacer">Console</span>
-          <button id="clear" type="button">Clear</button>
-        </div>
-        <pre id="console" class="out" aria-live="polite"><span class="note">Loading the Epsilon engines (about 11 MB of JavaScript)…</span></pre>
-        <div id="status" class="status"><span class="dot"></span><span id="status-text">Loading engines</span></div>
-      </section>
-
-      <section class="pane short" aria-label="Output files">
-        <div class="bar"><span class="label">Output files</span></div>
-        <div id="output-tabs" class="tabs" role="tablist" aria-label="Output files"></div>
-        <pre id="output" class="out" hidden></pre>
-        <div id="output-empty" class="empty">Models marked as output, and files that the program generates, appear here after a run.</div>
-      </section>
-    </div>
-  </main>
-
-  <footer>
-    Each run starts from the program and inputs shown, and edits are kept while you switch examples. EOL places statements before <code>operation</code> definitions.
-    Parallel operations such as <code>parallelSelect</code> run sequentially, since the page has one thread. Loading models over HTTP, XML features and running native processes are not available.
-    Flock needs models that support reflection (such as EMF models), which the JSON and CSV drivers do not, so it has no example here. A program that never terminates will freeze this tab.
-  </footer>
-</div>
-
-<script src="examples.js"></script>
+@cached
+operation Integer fibonacci() : Integer {
+  if (self = 1 or self = 0) {
+    return 1;
+  }
+  else {
+    return (self-1).fibonacci() + (self-2).fibonacci();
+  }
+}</textarea>
+  <button id="run" disabled>Loading…</button>
+  <pre id="output"></pre>
+</main>
 <script>
-const LANGUAGE_NAMES = { eol: "EOL", evl: "EVL", etl: "ETL", egl: "EGL", egx: "EGX", ecl: "ECL", eml: "EML", epl: "EPL", ewl: "EWL", flock: "Flock", pinset: "Pinset", emg: "EMG", eunit: "EUnit" };
-const $ = (id) => document.getElementById(id);
-const src = $("source"), out = $("console"), runBtn = $("run"), picker = $("example");
-const inputTabs = $("input-tabs"), inputBox = $("input"), outputTabs = $("output-tabs"), outputBox = $("output");
-const STORE_KEY = "epsilon-playground";
+const program = document.getElementById("program");
+const output = document.getElementById("output");
+const run = document.getElementById("run");
 
-// Working copies of the examples, so that edits survive switching between them
-const examples = window.EPSILON_EXAMPLES.map((e) => JSON.parse(JSON.stringify(e)));
-let current = examples[0];
-let inputs = [];          // [{label, kind, get(), set(v)}] for the current example
-let selectedInput = 0;
-let outputFiles = {};
-let selectedOutput = null;
+function show(text, cls) {
+  const span = document.createElement("span");
+  span.textContent = text;
+  if (cls) span.className = cls;
+  output.appendChild(span);
+}
 
-// Example picker, grouped by language
-const groups = {};
-examples.forEach((ex, i) => {
-  const name = LANGUAGE_NAMES[ex.language] || ex.language;
-  if (!groups[name]) { groups[name] = document.createElement("optgroup"); groups[name].label = name; picker.appendChild(groups[name]); }
-  groups[name].appendChild(new Option(ex.title.replace(/^[A-Za-z]+: /, ""), String(i)));
+function runProgram() {
+  output.textContent = "";
+  const [stdout, stderr, result] = runEol(program.value);
+  show(stdout);
+  show(stderr, "err");
+  if (result) show("Returned: " + result + "\n", "result");
+}
+
+run.onclick = runProgram;
+program.addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); if (!run.disabled) runProgram(); }
 });
-
-try {
-  const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
-  if (saved && saved.edits) {
-    for (const ex of examples) { if (saved.edits[ex.id]) Object.assign(ex, saved.edits[ex.id]); }
-  }
-  if (saved && saved.current) current = examples.find((e) => e.id === saved.current) || current;
-} catch (e) {}
-
-function save() {
-  try {
-    const edits = {};
-    for (const ex of examples) edits[ex.id] = { program: ex.program, models: ex.models, files: ex.files, comparison: ex.comparison };
-    localStorage.setItem(STORE_KEY, JSON.stringify({ current: current.id, edits }));
-  } catch (e) {}
-}
-
-function show(ex) {
-  current = ex;
-  picker.value = String(examples.indexOf(ex));
-  $("lang").textContent = LANGUAGE_NAMES[ex.language];
-  $("desc").textContent = ex.description;
-  src.value = ex.program;
-  inputs = ex.models.map((m) => ({ label: m.name, kind: m.output ? m.kind + " · output" : m.kind, get: () => m.content, set: (v) => { m.content = v; } }));
-  for (const [path, content] of Object.entries(ex.files || {})) {
-    inputs.push({ label: path, kind: "template", get: () => ex.files[path], set: (v) => { ex.files[path] = v; } });
-  }
-  if (ex.comparison !== undefined) {
-    inputs.push({ label: "comparison.ecl", kind: "ECL, run first", get: () => ex.comparison, set: (v) => { ex.comparison = v; } });
-  }
-  selectedInput = 0;
-  renderInputs();
-  setOutputs({});
-  save();
-}
-
-function renderTabs(container, labels, selected, onSelect) {
-  container.textContent = "";
-  labels.forEach(([label, kind], i) => {
-    const tab = document.createElement("button");
-    tab.type = "button";
-    tab.className = "tab";
-    tab.setAttribute("role", "tab");
-    tab.setAttribute("aria-selected", String(i === selected));
-    tab.textContent = label;
-    if (kind) { const k = document.createElement("span"); k.className = "kind"; k.textContent = kind; tab.appendChild(k); }
-    tab.addEventListener("click", () => onSelect(i));
-    container.appendChild(tab);
-  });
-}
-
-function renderInputs() {
-  const has = inputs.length > 0;
-  inputTabs.hidden = !has;
-  inputBox.hidden = !has;
-  $("input-empty").hidden = has;
-  if (!has) return;
-  renderTabs(inputTabs, inputs.map((i) => [i.label, i.kind]), selectedInput, (i) => { selectedInput = i; renderInputs(); });
-  inputBox.value = inputs[selectedInput].get();
-}
-
-function setOutputs(files) {
-  outputFiles = files;
-  const names = Object.keys(files);
-  if (!names.includes(selectedOutput)) selectedOutput = names[0] || null;
-  outputTabs.hidden = names.length === 0;
-  outputBox.hidden = names.length === 0;
-  $("output-empty").hidden = names.length > 0;
-  renderTabs(outputTabs, names.map((n) => [n, ""]), names.indexOf(selectedOutput), (i) => { selectedOutput = names[i]; setOutputs(outputFiles); });
-  outputBox.textContent = selectedOutput ? files[selectedOutput] : "";
-}
-
-picker.addEventListener("change", () => { show(examples[Number(picker.value)]); run(); });
-src.addEventListener("input", () => { current.program = src.value; save(); });
-inputBox.addEventListener("input", () => { inputs[selectedInput].set(inputBox.value); save(); });
-for (const area of [src, inputBox]) {
-  area.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); run(); }
-    else if (e.key === "Tab" && !e.shiftKey) {
-      e.preventDefault();
-      area.setRangeText("  ", area.selectionStart, area.selectionEnd, "end");
-      area.dispatchEvent(new Event("input"));
-    }
-  });
-}
-runBtn.addEventListener("click", run);
-$("clear").addEventListener("click", () => { out.textContent = ""; setStatus("", "Console cleared"); });
-if (!/Mac|iPhone|iPad/.test(navigator.platform)) runBtn.querySelector("kbd").textContent = "Ctrl↵";
-
-function setStatus(kind, text) { $("status").className = "status " + kind; $("status-text").textContent = text; }
-
-function append(text, cls) {
-  if (!text) return;
-  for (const line of text.replace(/\r\n/g, "\n").split(/(?<=\n)/)) {
-    const span = document.createElement("span");
-    // Colour EVL and EUnit results by kind
-    const m = /^(\[warning\]|\[error\]|SUCCESS|FAILURE|ERROR)\b/.exec(line);
-    span.className = cls || (m ? m[1].replace(/[\[\]]/g, "").toLowerCase() : "");
-    span.textContent = line;
-    out.appendChild(span);
-  }
-}
-
-function run() {
-  if (typeof window.runEpsilon !== "function") return;
-  runBtn.disabled = true;
-  setStatus("", "Running…");
-  // Yield once so the status repaints before the (synchronous) engine starts
-  setTimeout(() => {
-    out.textContent = "";
-    const request = { language: current.language, program: current.program, models: current.models, comparison: current.comparison, files: current.files || {} };
-    const t0 = performance.now();
-    let stdout = "", stderr = "", result = "", files = "{}";
-    try {
-      [stdout, stderr, result, files] = window.runEpsilon(JSON.stringify(request));
-    } catch (e) {
-      stderr = "The engine crashed: " + e;
-    }
-    const ms = performance.now() - t0;
-    append(stdout);
-    append(stderr, "err");
-    if (result) append((current.language === "egl" ? "" : "⇒ ") + result + "\n", current.language === "egl" ? "" : "ret");
-    let parsed = {};
-    try { parsed = JSON.parse(files); } catch (e) {}
-    setOutputs(parsed);
-    const nFiles = Object.keys(parsed).length;
-    if (!stdout && !stderr && !result) append(nFiles ? "(see Output files)" : "(no output)", "note");
-    setStatus(stderr ? "fail" : "ok", (stderr ? "Finished with errors" : "Finished") + " in " + ms.toFixed(1) + " ms"
-      + (nFiles ? " · " + nFiles + " output file" + (nFiles > 1 ? "s" : "") : ""));
-    runBtn.disabled = false;
-  }, 0);
-}
-
-function engineReady() {
-  if (typeof window.main === "function") { try { window.main([]); } catch (e) {} }
-  runBtn.disabled = false;
-  out.textContent = "";
-  setStatus("ok", "Engines loaded");
-  run();
-}
-function engineFailed() {
-  out.textContent = "";
-  append("Could not load teavm/classes.js. Build it with `mvn package` and serve target/webapp over HTTP.\n", "err");
-  setStatus("fail", "Engines failed to load");
-}
-
-show(current);
 </script>
-<script src="teavm/classes.js" onload="engineReady()" onerror="engineFailed()"></script>
+<!-- UTF-8 matters: the parser's tables are encoded in non-ASCII string literals -->
+<script src="teavm/classes.js" charset="utf-8"
+        onload="run.disabled = false; run.textContent = 'Run';"
+        onerror="show('Could not load teavm/classes.js. Run mvn package and serve target/webapp over HTTP.', 'err')"></script>
 </body>
 </html>

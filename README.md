@@ -9,6 +9,7 @@ it to JavaScript with [TeaVM](https://teavm.org/) 0.16.0. Programs can query a m
 mvn package
 cd target/webapp && python3 -m http.server 8000   # then open http://localhost:8000
 ```
+<img width="1459" height="887" alt="image" src="https://github.com/user-attachments/assets/a9aa7839-3a81-44fe-80b4-db8c9a027464" />
 
 The page (`src/main/webapp/index.html`) follows the [Epsilon Playground](https://eclipse.dev/epsilon/playground/):
 the same editor layout and its "Query Project Plan" example. It calls `runEol(program, emfatic, flexmi)`, exported from

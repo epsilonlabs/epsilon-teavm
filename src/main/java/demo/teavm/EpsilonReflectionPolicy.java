@@ -15,9 +15,9 @@ import org.teavm.extension.spi.reflection.ReflectionPolicy;
 /**
  * Compile-time policy telling TeaVM which classes need runtime reflection metadata.
  * Epsilon programs can call any public Java method on the objects they handle
- * (e.g. "abc".toUpperCase(), x.println()), which EOL resolves reflectively, both on the
- * target objects and on Epsilon's operation contributors. The parser's entry rule is
- * also invoked reflectively.
+ * (e.g. "abc".toUpperCase(), x.println(), element.eClass()), which EOL resolves reflectively,
+ * both on the target objects and on Epsilon's operation contributors. The parser's entry
+ * rule is also invoked reflectively.
  *
  * <p>Everything made reflectable is compiled. Members that need APIs a browser cannot
  * provide are stubbed by {@link BrowserCompatPlugin}.
@@ -38,7 +38,7 @@ public class EpsilonReflectionPolicy implements ReflectionPolicy {
             // Stubbed methods can mention types that are no longer compiled.
             if (Modifier.isPublic(m.modifiers()) && !Modifier.isNative(m.modifiers())
                     && !(epsilon && m.isConstructor())
-                    && !BrowserCompatPlugin.isStubbed(cls.name(), m.name())) {
+                    && !BrowserCompatPlugin.isReplaced(cls.name(), m.name())) {
                 members.add(m);
             }
         }
@@ -57,8 +57,12 @@ public class EpsilonReflectionPolicy implements ReflectionPolicy {
 
     private static boolean isReflectable(String name) {
         return name.startsWith("org.eclipse.epsilon.")
+                || inPackage(name, "org.eclipse.emf.ecore") // e.g. eClass(), eContainer() on model elements
+                || inPackage(name, "org.eclipse.emf.ecore.impl")
+                || inPackage(name, "org.eclipse.emf.common.util")
                 || inPackage(name, "java.lang")
                 || inPackage(name, "java.util")
+                || inPackage(name, "java.lang.ref") // EMF looks up Reference.refersTo() reflectively
                 || inPackage(name, "java.math");
     }
 

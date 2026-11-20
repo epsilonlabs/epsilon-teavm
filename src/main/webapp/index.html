@@ -9,42 +9,122 @@
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0d1117; --fg: #e6edf3; --muted: #8d96a0; --border: #30363d; --panel: #161b22; --err: #ff7b72; --accent: #4493f8; }
   }
-  body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; }
-  main { max-width: 900px; margin: 0 auto; display: grid; gap: 12px; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif;
+         display: flex; flex-direction: column; gap: 12px; }
   h1 { font-size: 1.3rem; margin: 0; }
   p { margin: 0; color: var(--muted); }
-  textarea, pre { box-sizing: border-box; width: 100%; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 6px;
-                  background: var(--panel); color: var(--fg); font: 14px/1.45 ui-monospace, Menlo, Consolas, monospace; tab-size: 2; }
-  textarea { height: 360px; resize: vertical; }
-  pre { min-height: 120px; white-space: pre-wrap; }
+  /* Program and model on top, console and metamodel below, as in the Epsilon Playground */
+  main { flex: 1; min-height: 0; display: grid; gap: 12px;
+         grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+  section { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  section header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px; height: 40px; flex: none;
+                   border-bottom: 1px solid var(--border); font-weight: 600; font-size: .9rem; }
+  textarea, pre { flex: 1; min-height: 0; width: 100%; margin: 0; padding: 12px; border: 0; resize: none; overflow: auto;
+                  background: var(--panel); color: var(--fg); font: 14px/1.45 ui-monospace, Menlo, Consolas, monospace; tab-size: 4; }
+  textarea { white-space: pre; }
+  pre { white-space: pre-wrap; }
   .err { color: var(--err); }
   .result { color: var(--accent); }
-  button { justify-self: start; padding: 6px 16px; font: inherit; border-radius: 6px; border: 1px solid var(--border); background: var(--accent); color: #fff; cursor: pointer; }
+  button { padding: 2px 14px; font: inherit; font-weight: normal; border-radius: 6px; border: 1px solid var(--border);
+           background: var(--accent); color: #fff; cursor: pointer; }
   button:disabled { opacity: .5; cursor: default; }
+  @media (max-width: 700px) {
+    body { height: auto; }
+    main { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+    section { height: 320px; }
+  }
 </style>
 </head>
 <body>
-<main>
   <h1>EOL in the browser</h1>
-  <p>Eclipse Epsilon's EOL engine, compiled to JavaScript with TeaVM. Press Run or Ctrl/Cmd+Enter.</p>
-  <textarea id="program" spellcheck="false">15.fibonacci().println();
-
-@cached
-operation Integer fibonacci() : Integer {
-  if (self = 1 or self = 0) {
-    return 1;
-  }
-  else {
-    return (self-1).fibonacci() + (self-2).fibonacci();
-  }
-}</textarea>
-  <button id="run" disabled>Loading…</button>
-  <pre id="output"></pre>
-</main>
+  <p>Eclipse Epsilon's EOL engine, compiled to JavaScript with TeaVM. The program queries a model written in
+     Flexmi, which conforms to a metamodel written in Emfatic. Press Run or Ctrl/Cmd+Enter.</p>
+  <main>
+    <section>
+      <header>Program (EOL) <button id="run" disabled>Loading…</button></header>
+      <textarea id="program" spellcheck="false" aria-label="Program (EOL)"></textarea>
+    </section>
+    <section>
+      <header>Model (Flexmi)</header>
+      <textarea id="flexmi" spellcheck="false" aria-label="Model (Flexmi)"></textarea>
+    </section>
+    <section>
+      <header>Console</header>
+      <pre id="output"></pre>
+    </section>
+    <section>
+      <header>Metamodel (Emfatic)</header>
+      <textarea id="emfatic" spellcheck="false" aria-label="Metamodel (Emfatic)"></textarea>
+    </section>
+  </main>
 <script>
 const program = document.getElementById("program");
+const flexmi = document.getElementById("flexmi");
+const emfatic = document.getElementById("emfatic");
 const output = document.getElementById("output");
 const run = document.getElementById("run");
+
+// The Epsilon Playground's "Query Project Plan" example
+program.value = `// For every task in the model
+for (t in Task.all) {
+	// Print the name and the total person-months of the task
+	(t.name + ": " + t.getTotalEffort()).println();
+}
+
+// Count the tasks that are undertaken by a single person
+Task.all.select(t|t.effort.size() = 1).size().
+	println("One-person tasks: ");
+
+// Returns the total person-months for a task
+operation Task getTotalEffort() {
+	return self.effort.
+		collect(e|self.duration*e.percentage/100.0).sum();
+}`;
+
+flexmi.value = `<?nsuri psl?>
+<project name="ACME">
+	<person name="Alice"/>
+	<person name="Bob"/>
+	<task name="Analysis" start="1" dur="3">
+		<effort person="Alice"/>
+	</task>
+	<task name="Design" start="4" dur="6">
+		<effort person="Bob"/>
+	</task>
+	<task name="Implementation" start="7" dur="3">
+		<effort person="Bob" perc="50"/>
+		<effort person="Alice" perc="50"/>
+	</task>
+</project>`;
+
+emfatic.value = `@namespace(uri="psl", prefix="")
+package psl;
+
+class Project {
+	attr String name;
+	attr String description;
+	val Task[*] tasks;
+	val Person[*] people;
+}
+
+class Task {
+	attr String name;
+	attr int start;
+	attr int duration;
+	val Effort[*]#task effort;
+}
+
+class Person {
+	attr String name;
+}
+
+class Effort {
+	ref Person person;
+	ref Task#effort task;
+	attr int percentage = 100;
+}`;
 
 function show(text, cls) {
   const span = document.createElement("span");
@@ -55,14 +135,14 @@ function show(text, cls) {
 
 function runProgram() {
   output.textContent = "";
-  const [stdout, stderr, result] = runEol(program.value);
+  const [stdout, stderr, result] = runEol(program.value, emfatic.value, flexmi.value);
   show(stdout);
   show(stderr, "err");
   if (result) show("Returned: " + result + "\n", "result");
 }
 
 run.onclick = runProgram;
-program.addEventListener("keydown", e => {
+document.addEventListener("keydown", e => {
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); if (!run.disabled) runProgram(); }
 });
 </script>

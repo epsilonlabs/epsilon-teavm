@@ -5,7 +5,7 @@ it to JavaScript with [TeaVM](https://teavm.org/) 0.16.0. Programs can query a m
 [Flexmi](https://eclipse.dev/epsilon/doc/flexmi/), against a metamodel written in
 [Emfatic](https://eclipse.dev/emfatic/).
 
-> [!NOTE]
+> [!TIP]
 > Try it at https://epsilonlabs.github.io/epsilon-teavm/
 
 To build and run it locally:
